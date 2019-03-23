@@ -1,0 +1,130 @@
+﻿<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Index</title>
+    <script src="~/Scripts/jquery-1.6.4.js"></script>
+    <script src="~/Scripts/jquery.signalR-2.4.0.min.js"></script>
+    <script src="~/signalr/hubs"></script>
+    <script>
+        $(document).ready(function () {
+
+            //Her kullanıcı oyuna bağlanır...
+            $("#login").click(function () {
+                $.ajax({
+                    url: "/Home/Login",
+                    type: "POST"
+                }).done(function (result) {
+                    if (result == 1) {
+                        $("#login").remove();
+                        $("body").append('<input type="button" value="Oyuna Başla" id="start" style="margin: 0;"/>');
+                        var game = $.connection.mygame;
+                        game.client.getgamer = function (d, ownerid) {
+                            $("#gamerContainer > div").remove();
+                            var carpan1;
+                            var carpan2;
+                            for (i = 0; i < d.length - 1; i++) {
+                                for (j = i + 1; j < d.length; j++) {
+                                    if (((d[i].PositionX + d[i].Width >= d[j].PositionX && d[i].PositionX + d[i].Width <= d[j].PositionX + d[j].Width) || (d[i].PositionX >= d[j].PositionX && d[i].PositionX <= d[j].PositionX + d[j].Width)) && ((d[i].PositionY <= d[j].PositionY + d[j].Height && d[i].PositionY >= d[j].PositionY) || (d[i].PositionY + d[i].Height >= d[j].PositionY && d[i].PositionY + d[i].Height <= d[j].PositionY + d[j].Height))) {
+                                        carpan1 = d[i];
+                                        carpan2 = d[j];
+                                    }// else if (d[i].PositionX >= d[j].PositionX && d[i].PositionX <= d[j].PositionX + d[j].Width && d((d[i].PositionY <= d[j].PositionY + d[j].Height && d[i].PositionY >= d[j].PositionY) || (d[i].PositionY + d[i].Height >= d[j].PositionY && d[i].PositionY + d[i].Height < d[j].PositionY + d[j].Height))) {
+                                    //    carpan1 = d[i];
+                                    //    carpan2 = d[j];
+                                    //} //else if (d[i].PositionY + d[i].Height >= d[j].PositionY && d[i].PositionY + d[i].Height <= d[j].PositionY + d[j].Height && ((d[i].PositionX >= d[j].PositionX && d[i].PositionX <= d[j].PositionX + d[j].Height) || (d[i].PositionX + d[i].Height <= d[j].PositionX + d[j].Height && d[i].PositionX + d[i].Height >= d[j].PositionX))) {
+                                    //    carpan1 = d[i];
+                                    //    carpan2 = d[j];
+                                    //}  
+
+                                    //else if (d[i].PositionY <= d[j].PositionY + d[j].Height && d[i].PositionY >= d[j].PositionY) {
+                                    //    carpan1 = d[i];
+                                    //    carpan2 = d[j];
+                                    //}
+                                    //else if (d[i].PositionY + d[i].Height >= d[j].PositionY && d[i].PositionY + d[i].Height <= d[j].PositionY + d[j].Height) {
+                                    //    carpan1 = d[i];
+                                    //    carpan2 = d[j];
+                                    //}
+                                }
+                            }
+                            for (i = 0; i < d.length; i++) {
+                                var gamerName = "";
+                                var gclass = "";
+                                console.log(d[i].PositionX + " " + d[i].PositionY);
+                                if (d[i].userID == ownerid) {
+                                    gamerName = "me";
+                                    gclass = "me";
+                                }
+                                else {
+                                    gclass = "";
+                                    gamerName = d[i].userID;
+                                }
+                                var gamerArea = '<div class="' + gclass + '"; id="gamer' + d[i].userID + '" style="position:absolute;margin:0;padding:0;text-align:center;width:' + d[i].Width + 'px;height:' + d[i].Height + 'px;background-color:#' + d[i].Color + ';left:' + d[i].PositionX + 'px;top:' + d[i].PositionY + 'px;">' + gamerName + '</div>';
+
+                                $("#gamerContainer").append(gamerArea);
+                            }
+                            var a = 0;
+                            if (carpan1 != undefined && carpan2 != undefined) {
+                                a = 1;
+                                var carpanID1 = "gamer" + carpan1.userID;
+                                var carpanID2 = "gamer" + carpan2.userID;
+                                $(carpanID1).remove();
+                                $(carpanID2).remove();
+                            }
+                            if (a == 1) {
+                                a = 0;
+                                window.location.reload();
+                            }
+                        };
+
+                        $.connection.hub.start().done(function (x) {
+                            $("#start").click(function () {
+                                game.server.sendGamer();
+                                $("#start").remove();
+                            });
+
+                            $('html').keydown(function (e) {
+                                if (e.keyCode == 38) {
+                                    game.server.sendUpButton();
+                                }
+                            });
+
+                            $('html').keydown(function (e) {
+                                if (e.keyCode == 40) {
+                                    game.server.sendDownButton();
+                                }
+                            });
+                            $('html').keydown(function (e) {
+                                if (e.keyCode == 39) {
+                                    game.server.sendRightButton();
+                                }
+                            });
+                            $('html').keydown(function (e) {
+                                if (e.keyCode == 37) {
+                                    game.server.sendLeftButton();
+                                }
+                            });
+
+                        })
+                    }
+                })
+            })
+
+
+        })
+    </script>
+</head>
+<body>
+
+    <div id="gamerContainer">
+
+    </div>
+
+    @if (HttpContext.Current.Request.Cookies["user"] == null)
+    {
+
+        <input type="button" value="Giriş Yap" id="login" style="margin:0;" />
+    }
+
+</body>
+</html>
